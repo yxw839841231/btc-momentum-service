@@ -223,48 +223,24 @@ def main():
 
         logger.info(f"📱 Telegram 推送完成: {telegram_success}/{len(all_results)} 成功")
 
-    # 推送到飞书
+    # 推送到飞书（使用合并消息）
     if feishu_enabled and config["feishu"]["webhook_url"]:
-        logger.info("📱 推送到飞书...")
+        logger.info("📱 推送到飞书（多币种合并消息）...")
         feishu_bot = FeishuBot(webhook_url=config["feishu"]["webhook_url"])
 
-        feishu_success = 0
-        feishu_failed = 0
-        import time
+        # 使用合并消息格式，一次性发送所有币种
+        logger.info(f"  合并 {len(all_results)} 个币种到一条消息...")
+        send_result = feishu_bot.send_multi_currency_report(
+            all_results=all_results,
+            index_url=github_pages_url + "/",
+            style="rich"  # 使用富文本卡片格式
+        )
 
-        for i, result in enumerate(all_results, 1):
-            currency = result["currency"]
-            analysis_result = result["analysis_result"]
-            report_filename = Path(result["report_path"]).name
-            report_url = f"{github_pages_url}/reports/{report_filename}"
-
-            logger.info(f"  [{i}/{len(all_results)}] 正在推送 {currency} 到飞书...")
-
-            # 飞书 webhook 可能有频率限制，添加延迟避免限流
-            if i > 1:
-                logger.info(f"  等待 2 秒以避免触发飞书限流...")
-                time.sleep(2)
-
-            send_result = feishu_bot.send_analysis_report(
-                analysis_data=analysis_result,
-                report_url=report_url,
-                index_url=github_pages_url + "/"
-            )
-
-            if send_result.get("status") == "success":
-                logger.info(f"  ✅ {currency} 飞书推送成功")
-                feishu_success += 1
-            else:
-                logger.error(f"  ❌ {currency} 飞书推送失败")
-                logger.error(f"  错误详情: {send_result.get('error')}")
-                feishu_failed += 1
-
-        logger.info(f"📱 飞书推送完成: {feishu_success} 成功, {feishu_failed} 失败 (总计 {len(all_results)} 个)")
-        if feishu_failed > 0:
-            logger.warning(f"⚠️  有 {feishu_failed} 个币种推送失败，可能原因：")
-            logger.warning(f"  - 飞书 Webhook 频率限制")
-            logger.warning(f"  - 网络问题")
-            logger.warning(f"  - 消息格式问题")
+        if send_result.get("status") == "success":
+            logger.info(f"  ✅ 飞书推送成功（合并 {len(all_results)} 个币种）")
+        else:
+            logger.error(f"  ❌ 飞书推送失败")
+            logger.error(f"  错误详情: {send_result.get('error')}")
 
     logger.info("\n" + "="*60)
     logger.info(f"✅ 分析流程完成！共处理 {len(all_results)} 个币种")

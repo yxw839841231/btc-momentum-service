@@ -285,7 +285,7 @@ class FeishuBot:
         index_url: str = ""
     ) -> dict:
         """
-        发送分析报告
+        发送分析报告（单个币种）
 
         Args:
             analysis_data: 分析数据
@@ -302,6 +302,71 @@ class FeishuBot:
             btn_text=card_data["btn_text"],
             btn_url=card_data["btn_url"]
         )
+
+    def send_multi_currency_report(
+        self,
+        all_results: List[dict],
+        index_url: str = "",
+        style: str = "rich"
+    ) -> dict:
+        """
+        发送多币种合并报告
+
+        Args:
+            all_results: 所有币种的分析结果列表
+            index_url: 主页链接
+            style: 消息样式 ("rich" 富文本卡片 或 "compact" 紧凑表格)
+
+        Returns:
+            发送结果
+        """
+        from src.feishu_multi_formatter import format_multi_currency_card, format_multi_currency_compact
+
+        if style == "compact":
+            card_data = format_multi_currency_compact(all_results, index_url)
+            # 使用普通文本发送
+            return self.send_text(card_data["content"])
+        else:
+            # 使用富文本卡片
+            card_data = format_multi_currency_card(all_results, index_url)
+            return self.send_rich_card(
+                title=card_data["title"],
+                elements=card_data["elements"]
+            )
+
+    def send_rich_card(self, title: str, elements: List[dict]) -> dict:
+        """
+        发送富文本卡片（支持更多元素类型）
+
+        Args:
+            title: 卡片标题
+            elements: 卡片元素列表
+
+        Returns:
+            发送结果
+        """
+        card = {
+            "config": {
+                "wide_screen_mode": True
+            },
+            "elements": elements
+        }
+
+        if title:
+            card["header"] = {
+                "title": {
+                    "content": title,
+                    "tag": "plain_text"
+                },
+                "template": "blue"
+            }
+
+        data = {
+            "msg_type": "interactive",
+            "card": card
+        }
+
+        return self._send_request(data)
 
     def test_connection(self) -> bool:
         """
