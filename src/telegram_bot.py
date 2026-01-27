@@ -55,10 +55,17 @@ class TelegramBot:
             logger.error("Chat ID 未设置")
             return {"status": "error", "error": "Chat ID 未设置"}
 
+        # 确保 chat_id 是整数（Telegram API 要求）
+        try:
+            chat_id_int = int(chat_id)
+        except (ValueError, TypeError):
+            logger.error(f"Chat ID 格式错误: {chat_id}")
+            return {"status": "error", "error": f"Chat ID 格式错误: {chat_id}"}
+
         url = f"{self.api_url}/sendMessage"
 
         data = {
-            "chat_id": chat_id,
+            "chat_id": chat_id_int,
             "text": text,
             "disable_web_page_preview": False
         }
@@ -97,13 +104,24 @@ class TelegramBot:
         """
         # TODO: 根据实际分析数据格式化
 
+        # 简化时间格式，避免特殊字符
+        timestamp = analysis_data.get('timestamp', 'N/A')
+        if timestamp != 'N/A':
+            # 简化 ISO 格式时间为可读格式
+            try:
+                from datetime import datetime
+                dt = datetime.fromisoformat(timestamp.replace('Z', '+00:00'))
+                timestamp = dt.strftime('%Y-%m-%d %H:%M:%S')
+            except:
+                pass
+
         message = f"""📊 BTC 动能分析
 
-时间: {analysis_data.get('timestamp', 'N/A')}
+时间: {timestamp}
 
 【大周期】2日线 ↑ 1日线 ↑
-【中周期】12h ⚠️  6h 调整 4h ↓
-【小周期】2h ↓ 1h ↓ 30m ⟲
+【中周期】12h 警告 6h 调整 4h 下跌
+【小周期】2h 下跌 1h 下跌 30m 反转
 
 🔴 关键信号:
 • 12h 出现顶背离
