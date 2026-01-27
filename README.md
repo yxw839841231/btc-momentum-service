@@ -1,15 +1,16 @@
 # BTC 动能分析服务
 
-基于自定义动能理论的 BTC 多时间级别分析服务，支持定时分析、Telegram 推送和 Web 报告查看。
+基于自定义动能理论的 BTC 多时间级别分析服务，支持定时分析、Telegram/飞书推送和 Web 报告查看。
 
 ## 功能特性
 
 - ✅ **多时间级别分析**：8个时间级别（2d/1d/12h/6h/4h/2h/1h/30m）
 - ✅ **动能理论分析**：线段分类、背离检测、单位周期判断
-- ✅ **自动推送**：每小时推送到 Telegram
+- ✅ **自动推送**：支持推送到 Telegram 和飞书
+- ✅ **实时价格**：包含 BTC 实时价格和24小时变化
 - ✅ **Web 报告**：美观的 HTML 报告托管在 GitHub Pages
 - ✅ **零成本部署**：基于 GitHub Actions，完全免费
-- ✅ **实时告警**：检测到关键信号立即通知（开发中）
+- ✅ **多平台支持**：可同时推送到 Telegram 和飞书
 
 ## 项目结构
 
@@ -28,6 +29,8 @@ btc-momentum-service/
 │   ├── __init__.py
 │   ├── analyzer.py                   # 分析引擎
 │   ├── telegram_bot.py               # Telegram Bot
+│   ├── feishu_bot.py                 # 飞书机器人
+│   ├── price_fetcher.py              # BTC 价格获取
 │   └── report_generator.py           # 报告生成器
 ├── templates/                         # HTML 模板（待添加）
 ├── reports/                           # HTML 报告输出
@@ -94,11 +97,42 @@ git push -u origin main
 
 #### 步骤 2：配置 GitHub Secrets
 
+**至少配置一个消息推送平台（Telegram 或飞书）**
+
+##### 方案 A：使用 Telegram
+
 1. 打开 GitHub 仓库页面
 2. 进入 **Settings** → **Secrets and variables** → **Actions**
 3. 添加以下 Secrets：
    - `TELEGRAM_BOT_TOKEN`: 你的 Bot Token
    - `TELEGRAM_CHAT_ID`: 你的 Chat ID
+
+**详细步骤**：
+- 获取 Telegram Bot：搜索 `@BotFather` → 发送 `/newbot`
+- 获取 Chat ID：搜索 `@userinfobot` → 发送任意消息
+
+##### 方案 B：使用飞书
+
+1. 打开 GitHub 仓库页面
+2. 进入 **Settings** → **Secrets and variables** → **Actions**
+3. 添加以下 Secret：
+   - `FEISHU_WEBHOOK_URL`: 你的飞书机器人 Webhook URL
+
+**详细步骤**：
+- 在飞书中创建群组
+- 群设置 → 群机器人 → 添加自定义机器人
+- 复制生成的 Webhook URL
+
+📖 **详细配置指南**：[飞书机器人配置指南](FEISHU_SETUP.md)
+
+##### 方案 C：同时使用 Telegram 和飞书
+
+只需配置所有三个 Secrets：
+- `TELEGRAM_BOT_TOKEN`
+- `TELEGRAM_CHAT_ID`
+- `FEISHU_WEBHOOK_URL`
+
+系统会自动同时推送到两个平台！
 
 #### 步骤 3：启用 GitHub Pages
 
@@ -117,7 +151,7 @@ git push -u origin main
 
 GitHub Actions 会在每小时（UTC 时间）自动运行分析任务。你可以：
 - 在 Actions 页面查看运行历史
-- 在 Telegram 接收推送消息
+- 在 Telegram / 飞书 接收推送消息
 - 通过 GitHub Pages 查看报告
 
 ### 4. 更新 GitHub Pages URL

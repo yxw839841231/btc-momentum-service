@@ -16,6 +16,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from src.analyzer import MomentumAnalyzer
 from src.telegram_bot import TelegramBot
+from src.feishu_bot import FeishuBot
 from src.report_generator import HTMLReportGenerator
 from src.price_fetcher import BTCPriceFetcher
 
@@ -33,7 +34,12 @@ def load_config():
     return {
         "telegram": {
             "bot_token": os.environ.get("TELEGRAM_BOT_TOKEN"),
-            "chat_id": os.environ.get("TELEGRAM_CHAT_ID")
+            "chat_id": os.environ.get("TELEGRAM_CHAT_ID"),
+            "enabled": bool(os.environ.get("TELEGRAM_BOT_TOKEN") and os.environ.get("TELEGRAM_CHAT_ID"))
+        },
+        "feishu": {
+            "webhook_url": os.environ.get("FEISHU_WEBHOOK_URL"),
+            "enabled": bool(os.environ.get("FEISHU_WEBHOOK_URL"))
         },
         "reports": {
             "output_dir": "reports"
@@ -50,12 +56,19 @@ def main():
     # 加载配置
     config = load_config()
 
-    # 检查环境变量
-    bot_token = config["telegram"]["bot_token"]
-    chat_id = config["telegram"]["chat_id"]
+    # 检查是否至少配置了一个消息平台
+    telegram_enabled = config["telegram"]["enabled"]
+    feishu_enabled = config["feishu"]["enabled"]
 
-    if not bot_token or not chat_id:
-        logger.error("❌ 错误: 请设置环境变量 TELEGRAM_BOT_TOKEN 和 TELEGRAM_CHAT_ID")
+    if not telegram_enabled and not feishu_enabled:
+        logger.error("❌ 错误: 请至少配置一个消息推送平台")
+        logger.error("")
+        logger.error("Telegram 配置:")
+        logger.error("  export TELEGRAM_BOT_TOKEN='your_bot_token'")
+        logger.error("  export TELEGRAM_CHAT_ID='your_chat_id'")
+        logger.error("")
+        logger.error("飞书配置:")
+        logger.error("  export FEISHU_WEBHOOK_URL='your_webhook_url'")
         return 1
 
     try:
@@ -106,24 +119,50 @@ def main():
         report_url = f"https://yxw839841231.github.io/btc-momentum-service/reports/{report_filename}"
         index_url = "https://yxw839841231.github.io/btc-momentum-service/"
 
-        # 5. 推送到 Telegram
-        logger.info("📤 步骤 4: 推送到 Telegram")
-        bot = TelegramBot(bot_token=bot_token, default_chat_id=chat_id)
+        # 5. 推送到消息平台（Telegram 和/或 飞书）
+        logger.info("📤 步骤 5: 推送到消息平台")
 
-        # 直接尝试发送消息（不预先测试连接，避免超时问题）
-        # 发送包含主页链接和具体报告链接的消息
-        send_result = bot.send_analysis_report(
-            analysis_data=analysis_result,
-            report_url=report_url,
-            index_url=index_url
-        )
+        # 检查哪些平台已启用
+        telegram_enabled = config["telegram"]["enabled"]
+        feishu_enabled = config["feishu"]["enabled"]
 
-        if send_result.get("status") == "success":
-            logger.info("✅ Telegram 推送成功")
-        else:
-            logger.warning(f"⚠️ Telegram 推送失败，但报告已生成: {send_result.get('error')}")
-            logger.warning("报告链接: " + report_url)
-            # 不要返回错误，因为报告已经成功生成
+        if not telegram_enabled and not feishu_enabled:
+            logger.warning("⚠️ 没有配置任何消息推送平台（Telegram 或 飞书）")
+
+        # 推送到 Telegram
+        if telegram_enabled:
+            logger.info("📱 推送到 Telegram...")
+            telegram_bot = TelegramBot(
+                bot_token=config["telegram"]["bot_token"],
+                default_chat_id=config["telegram"]["chat_id"]
+            )
+
+            send_result = telegram_bot.send_analysis_report(
+                analysis_data=analysis_result,
+                report_url=report_url,
+                index_url=index_url
+            )
+
+            if send_result.get("status") == "success":
+                logger.info("✅ Telegram 推送成功")
+            else:
+                logger.warning(f"⚠️ Telegram 推送失败: {send_result.get('error')}")
+
+        # 推送到飞书
+        if feishu_enabled:
+            logger.info("📱 推送到飞书...")
+            feishu_bot = FeishuBot(webhook_url=config["feishu"]["webhook_url"])
+
+            send_result = feishu_bot.send_analysis_report(
+                analysis_data=analysis_result,
+                report_url=report_url,
+                index_url=index_url
+            )
+
+            if send_result.get("status") == "success":
+                logger.info("✅ 飞书推送成功")
+            else:
+                logger.warning(f"⚠️ 飞书推送失败: {send_result.get('error')}")
 
         logger.info("=" * 60)
         logger.info("✅ 分析流程完成！")
