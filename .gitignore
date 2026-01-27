@@ -30,6 +30,10 @@ data/*.json
 data/*.csv
 logs/*.log
 
+# 订阅数据库（忽略测试数据库，但保留生产数据库）
+data/test_*.db
+# data/subscriptions.db  # 生产数据库需要提交到仓库（取消注释以忽略）
+
 # IDE
 .vscode/
 .idea/

@@ -46,7 +46,16 @@ jobs:
         run: |
           mkdir -p data reports logs
 
-      - name: 运行 BTC 动能分析
+      - name: 初始化订阅数据库
+        run: |
+          if [ ! -f data/subscriptions.db ]; then
+            echo "数据库不存在，初始化数据库..."
+            python scripts/init_subscription_db.py
+          else
+            echo "数据库已存在，跳过初始化"
+          fi
+
+      - name: 运行动能分析（支持多币种）
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
@@ -70,6 +79,30 @@ jobs:
           destination_dir: ./
           keep_files: true  # 保留历史报告
           commit_message: '更新分析报告 ${{ github.run_number }}'
+
+      - name: 提交订阅数据库到仓库
+        if: success() && always()
+        run: |
+          # 配置 git
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+
+          # 检查数据库是否有变化
+          if [ -f data/subscriptions.db ]; then
+            git add data/subscriptions.db
+
+            # 检查是否有新的更改
+            if git diff --cached --quiet; then
+              echo "数据库无变化，跳过提交"
+            else
+              echo "数据库有更新，提交更改..."
+              git commit -m "chore: 更新订阅数据库 [skip ci]"
+              git push
+              echo "✅ 数据库已提交到仓库"
+            fi
+          else
+            echo "⚠️ 数据库文件不存在"
+          fi
 
       - name: 上传日志（失败时）
         if: failure()
