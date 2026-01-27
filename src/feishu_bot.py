@@ -142,6 +142,7 @@ class FeishuBot:
             API 响应
         """
         try:
+            logger.info(f"正在发送飞书消息到 {self.webhook_url[:50]}...")
             response = requests.post(
                 self.webhook_url,
                 json=data,
@@ -158,15 +159,32 @@ class FeishuBot:
                     logger.info(f"✅ 消息发送成功")
                     return {"status": "success", "data": result}
                 else:
-                    logger.error(f"❌ 飞书 API 错误: {result}")
-                    return {"status": "error", "error": result}
+                    error_msg = result.get("msg", "未知错误")
+                    error_code = result.get("code", "N/A")
+                    logger.error(f"❌ 飞书 API 错误 [{error_code}]: {error_msg}")
+                    logger.error(f"完整响应: {result}")
+                    return {
+                        "status": "error",
+                        "error": f"API错误 [{error_code}]: {error_msg}",
+                        "details": result
+                    }
             else:
                 logger.error(f"❌ HTTP 错误: {response.status_code}")
-                return {"status": "error", "error": f"HTTP {response.status_code}"}
+                logger.error(f"响应内容: {response.text}")
+                return {
+                    "status": "error",
+                    "error": f"HTTP {response.status_code}: {response.text}"
+                }
 
+        except requests.Timeout as e:
+            logger.error(f"❌ 请求超时: {e}")
+            return {"status": "error", "error": f"请求超时: {str(e)}"}
         except requests.RequestException as e:
             logger.error(f"❌ 网络请求失败: {e}")
-            return {"status": "error", "error": str(e)}
+            return {"status": "error", "error": f"网络错误: {str(e)}"}
+        except Exception as e:
+            logger.error(f"❌ 未知错误: {e}")
+            return {"status": "error", "error": f"未知错误: {str(e)}"}
 
     def format_analysis_card(self, analysis_data: dict, report_url: str, index_url: str = "") -> Dict:
         """
