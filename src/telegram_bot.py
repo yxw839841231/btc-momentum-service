@@ -77,18 +77,32 @@ class TelegramBot:
         try:
             # 增加超时时间到 30 秒
             response = requests.post(url, json=data, timeout=30)
-            response.raise_for_status()
 
-            result = response.json()
-            if result.get("ok"):
-                logger.info(f"消息发送成功: chat_id={chat_id}")
+            # 记录详细的响应信息
+            logger.info(f"Telegram API 响应状态码: {response.status_code}")
+
+            # 先解析 JSON，获取详细信息
+            try:
+                result = response.json()
+            except:
+                result = {"raw": response.text}
+
+            if response.status_code == 200 and result.get("ok"):
+                logger.info(f"✅ 消息发送成功: chat_id={chat_id_int}")
                 return {"status": "success", "data": result}
             else:
-                logger.error(f"消息发送失败: {result}")
+                # 详细的错误信息
+                error_desc = result.get("description", "未知错误")
+                error_params = result.get("parameters", {})
+                logger.error(f"❌ Telegram API 错误:")
+                logger.error(f"   状态码: {response.status_code}")
+                logger.error(f"   错误描述: {error_desc}")
+                logger.error(f"   错误参数: {error_params}")
+                logger.error(f"   完整响应: {result}")
                 return {"status": "error", "error": result}
 
         except requests.RequestException as e:
-            logger.error(f"网络请求失败: {e}")
+            logger.error(f"❌ 网络请求失败: {e}")
             return {"status": "error", "error": str(e)}
 
     def format_analysis_summary(self, analysis_data: dict, report_url: str) -> str:
