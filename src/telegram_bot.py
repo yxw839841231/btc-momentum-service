@@ -67,7 +67,8 @@ class TelegramBot:
             data["parse_mode"] = parse_mode
 
         try:
-            response = requests.post(url, json=data, timeout=10)
+            # 增加超时时间到 30 秒
+            response = requests.post(url, json=data, timeout=30)
             response.raise_for_status()
 
             result = response.json()
@@ -171,7 +172,8 @@ class TelegramBot:
         url = f"{self.api_url}/getMe"
 
         try:
-            response = requests.get(url, timeout=5)
+            # 增加超时时间到 15 秒
+            response = requests.get(url, timeout=15)
             response.raise_for_status()
 
             result = response.json()

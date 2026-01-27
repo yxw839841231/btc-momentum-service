@@ -88,12 +88,7 @@ def main():
         logger.info("📤 步骤 4: 推送到 Telegram")
         bot = TelegramBot(bot_token=bot_token, default_chat_id=chat_id)
 
-        # 测试连接
-        if not bot.test_connection():
-            logger.error("❌ Telegram Bot 连接失败")
-            return 1
-
-        # 发送分析报告
+        # 直接尝试发送消息（不预先测试连接，避免超时问题）
         send_result = bot.send_analysis_report(
             analysis_data=analysis_result,
             report_url=report_url
@@ -102,8 +97,9 @@ def main():
         if send_result.get("status") == "success":
             logger.info("✅ Telegram 推送成功")
         else:
-            logger.error(f"❌ Telegram 推送失败: {send_result}")
-            return 1
+            logger.warning(f"⚠️ Telegram 推送失败，但报告已生成: {send_result.get('error')}")
+            logger.warning("报告链接: " + report_url)
+            # 不要返回错误，因为报告已经成功生成
 
         logger.info("=" * 60)
         logger.info("✅ 分析流程完成！")
