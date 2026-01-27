@@ -1,6 +1,6 @@
 {
   "analysis": {
-    "currencies": ["BTC,SUI,ENA,SOL"],
+    "currencies": ["BTC", "SUI", "SOL"],
     "timeframes": ["2d", "1d", "12h", "6h", "4h", "2h", "1h", "30m"],
     "exchange": "okx"
   },
