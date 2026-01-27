@@ -130,7 +130,17 @@ class TelegramBot:
             except:
                 pass
 
+        # 获取价格信息
+        btc_price = analysis_data.get('btc_price', {})
+        current_price = btc_price.get('price', 'N/A')
+        price_change = btc_price.get('change_24h', 0)
+        price_change_pct = btc_price.get('change_24h_pct', 0)
+        price_indicator = "📈" if price_change >= 0 else "📉"
+
         message = f"""📊 BTC 动能分析
+
+💰 价格: {price_indicator} ${current_price}
+   24h: {price_change:+.2f} ({price_change_pct:+.2f}%)
 
 时间: {timestamp}
 

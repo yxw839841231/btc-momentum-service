@@ -17,6 +17,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from src.analyzer import MomentumAnalyzer
 from src.telegram_bot import TelegramBot
 from src.report_generator import HTMLReportGenerator
+from src.price_fetcher import BTCPriceFetcher
 
 # 配置日志
 logging.basicConfig(
@@ -58,6 +59,16 @@ def main():
         return 1
 
     try:
+        # 0. 获取 BTC 实时价格
+        logger.info("💰 步骤 0: 获取 BTC 实时价格")
+        price_fetcher = BTCPriceFetcher(exchange="okx")
+        btc_price = price_fetcher.fetch_price()
+
+        if btc_price and btc_price.get("price") != "N/A":
+            logger.info(f"✅ BTC 价格: ${btc_price['price']} ({btc_price['change_24h_pct']:+.2f}%)")
+        else:
+            logger.warning("⚠️  价格获取失败，使用默认值")
+
         # 1. 初始化分析器
         logger.info("📊 步骤 1: 初始化分析器")
         analyzer = MomentumAnalyzer()
@@ -69,6 +80,9 @@ def main():
         if analysis_result["status"] != "success":
             logger.error(f"❌ 分析失败: {analysis_result}")
             return 1
+
+        # 将价格信息添加到分析结果
+        analysis_result["btc_price"] = btc_price
 
         # 3. 生成 HTML 报告
         logger.info("📄 步骤 3: 生成 HTML 报告")
