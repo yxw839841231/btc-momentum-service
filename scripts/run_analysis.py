@@ -82,7 +82,7 @@ def main():
         # 4. 构建报告 URL
         # TODO: 实际部署后需要配置正确的 GitHub Pages URL
         report_filename = Path(report_path).name
-        report_url = f"https://username.github.io/btc-momentum-service/reports/{report_filename}"
+        report_url = f"https://yxw839841231.github.io/btc-momentum-service/reports/{report_filename}"
 
         # 5. 推送到 Telegram
         logger.info("📤 步骤 4: 推送到 Telegram")
