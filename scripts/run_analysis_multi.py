@@ -156,10 +156,24 @@ def main():
 
     # 分析所有币种
     all_results = []
-    for currency in currencies:
+    logger.info(f"\n{'='*60}")
+    logger.info(f"开始分析 {len(currencies)} 个币种")
+    logger.info(f"{'='*60}")
+
+    for i, currency in enumerate(currencies, 1):
+        logger.info(f"\n[{i}/{len(currencies)}] 准备分析 {currency}...")
         result = analyze_currency(currency, config, config["analysis"]["timeframes"])
         if result:
             all_results.append(result)
+            logger.info(f"✅ {currency} 分析完成")
+        else:
+            logger.error(f"❌ {currency} 分析失败")
+
+    logger.info(f"\n{'='*60}")
+    logger.info(f"分析结果汇总: {len(all_results)}/{len(currencies)} 个币种成功")
+    if all_results:
+        logger.info(f"成功的币种: {', '.join([r['currency'] for r in all_results])}")
+    logger.info(f"{'='*60}\n")
 
     if not all_results:
         logger.error("❌ 所有币种分析均失败")
@@ -176,6 +190,8 @@ def main():
 
     # 推送消息
     logger.info(f"\n📤 开始推送消息...")
+    logger.info(f"待推送币种数量: {len(all_results)}")
+    logger.info(f"待推送币种: {', '.join([r['currency'] for r in all_results])}")
 
     # 推送到 Telegram
     if telegram_enabled and config["telegram"]["bot_token"]:
@@ -185,12 +201,14 @@ def main():
             default_chat_id=config["telegram"].get("chat_id")
         )
 
+        telegram_success = 0
         for result in all_results:
             currency = result["currency"]
             analysis_result = result["analysis_result"]
             report_filename = Path(result["report_path"]).name
             report_url = f"{github_pages_url}/reports/{report_filename}"
 
+            logger.info(f"  正在推送 {currency} 到 Telegram...")
             send_result = telegram_bot.send_analysis_report(
                 analysis_data=analysis_result,
                 report_url=report_url,
@@ -199,20 +217,25 @@ def main():
 
             if send_result.get("status") == "success":
                 logger.info(f"  ✅ {currency} Telegram 推送成功")
+                telegram_success += 1
             else:
                 logger.warning(f"  ⚠️  {currency} Telegram 推送失败: {send_result.get('error')}")
+
+        logger.info(f"📱 Telegram 推送完成: {telegram_success}/{len(all_results)} 成功")
 
     # 推送到飞书
     if feishu_enabled and config["feishu"]["webhook_url"]:
         logger.info("📱 推送到飞书...")
         feishu_bot = FeishuBot(webhook_url=config["feishu"]["webhook_url"])
 
+        feishu_success = 0
         for result in all_results:
             currency = result["currency"]
             analysis_result = result["analysis_result"]
             report_filename = Path(result["report_path"]).name
             report_url = f"{github_pages_url}/reports/{report_filename}"
 
+            logger.info(f"  正在推送 {currency} 到飞书...")
             send_result = feishu_bot.send_analysis_report(
                 analysis_data=analysis_result,
                 report_url=report_url,
@@ -221,8 +244,11 @@ def main():
 
             if send_result.get("status") == "success":
                 logger.info(f"  ✅ {currency} 飞书推送成功")
+                feishu_success += 1
             else:
                 logger.warning(f"  ⚠️  {currency} 飞书推送失败: {send_result.get('error')}")
+
+        logger.info(f"📱 飞书推送完成: {feishu_success}/{len(all_results)} 成功")
 
     logger.info("\n" + "="*60)
     logger.info(f"✅ 分析流程完成！共处理 {len(all_results)} 个币种")
