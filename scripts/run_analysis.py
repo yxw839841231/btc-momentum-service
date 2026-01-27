@@ -17,7 +17,6 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from src.analyzer import MomentumAnalyzer
 from src.telegram_bot import TelegramBot
-from src.feishu_bot import FeishuBot
 from src.report_generator import HTMLReportGenerator
 from src.price_fetcher import PriceFetcher
 from src.subscription_manager import SubscriptionManager
@@ -37,12 +36,7 @@ def load_config():
     return {
         "telegram": {
             "bot_token": os.environ.get("TELEGRAM_BOT_TOKEN"),
-            "chat_id": os.environ.get("TELEGRAM_CHAT_ID"),
-            "enabled": bool(os.environ.get("TELEGRAM_BOT_TOKEN") and os.environ.get("TELEGRAM_CHAT_ID"))
-        },
-        "feishu": {
-            "webhook_url": os.environ.get("FEISHU_WEBHOOK_URL"),
-            "enabled": bool(os.environ.get("FEISHU_WEBHOOK_URL"))
+            "chat_id": os.environ.get("TELEGRAM_CHAT_ID")
         },
         "reports": {
             "output_dir": "reports"
@@ -63,19 +57,12 @@ def main():
     # 加载配置
     config = load_config()
 
-    # 检查是否至少配置了一个消息平台
-    telegram_enabled = config["telegram"]["enabled"]
-    feishu_enabled = config["feishu"]["enabled"]
+    # 检查环境变量
+    bot_token = config["telegram"]["bot_token"]
+    chat_id = config["telegram"]["chat_id"]
 
-    if not telegram_enabled and not feishu_enabled:
-        logger.error("❌ 错误: 请至少配置一个消息推送平台")
-        logger.error("")
-        logger.error("Telegram 配置:")
-        logger.error("  export TELEGRAM_BOT_TOKEN='your_bot_token'")
-        logger.error("  export TELEGRAM_CHAT_ID='your_chat_id'")
-        logger.error("")
-        logger.error("飞书配置:")
-        logger.error("  export FEISHU_WEBHOOK_URL='your_webhook_url'")
+    if not bot_token or not chat_id:
+        logger.error("❌ 错误: 请设置环境变量 TELEGRAM_BOT_TOKEN 和 TELEGRAM_CHAT_ID")
         return 1
 
     try:
@@ -129,6 +116,7 @@ def main():
         report_url = f"https://yxw839841231.github.io/btc-momentum-service/reports/{report_filename}"
         index_url = "https://yxw839841231.github.io/btc-momentum-service/"
 
+<<<<<<< HEAD
         # 5. 推送到消息平台（基于订阅）
         logger.info("📤 步骤 5: 推送到消息平台（基于订阅）")
 
@@ -213,6 +201,26 @@ def main():
                     logger.info("  ⏭️  飞书推送跳过（无订阅者需要接收）")
 
             logger.info(f"📊 推送统计: Telegram {telegram_sent_count}, 飞书 {feishu_sent_count}")
+=======
+        # 5. 推送到 Telegram
+        logger.info("📤 步骤 4: 推送到 Telegram")
+        bot = TelegramBot(bot_token=bot_token, default_chat_id=chat_id)
+
+        # 直接尝试发送消息（不预先测试连接，避免超时问题）
+        # 发送包含主页链接和具体报告链接的消息
+        send_result = bot.send_analysis_report(
+            analysis_data=analysis_result,
+            report_url=report_url,
+            index_url=index_url
+        )
+
+        if send_result.get("status") == "success":
+            logger.info("✅ Telegram 推送成功")
+        else:
+            logger.warning(f"⚠️ Telegram 推送失败，但报告已生成: {send_result.get('error')}")
+            logger.warning("报告链接: " + report_url)
+            # 不要返回错误，因为报告已经成功生成
+>>>>>>> parent of 6f81777... Add Feishu bot support for message pushing
 
         logger.info("=" * 60)
         logger.info("✅ 分析流程完成！")
