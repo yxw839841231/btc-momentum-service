@@ -4,8 +4,17 @@ Telegram Bot 模块
 """
 
 import logging
-from typing import Optional
+from typing import Optional, Dict
 import requests
+import sys
+from pathlib import Path
+
+# 添加父目录到路径以导入其他模块
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
+from src.command_parser import CommandParser
+from src.subscription_manager import SubscriptionManager, AlertFilter
+from src.currency_config import CurrencyConfig
 
 # 配置日志
 logging.basicConfig(
@@ -18,17 +27,26 @@ logger = logging.getLogger(__name__)
 class TelegramBot:
     """Telegram Bot 客户端"""
 
-    def __init__(self, bot_token: str, default_chat_id: Optional[str] = None):
+    def __init__(self, bot_token: str, default_chat_id: Optional[str] = None,
+                 db_path: str = "data/subscriptions.db"):
         """
         初始化 Bot
 
         Args:
             bot_token: Telegram Bot Token
             default_chat_id: 默认 Chat ID
+            db_path: 订阅数据库路径
         """
         self.bot_token = bot_token
         self.default_chat_id = default_chat_id
         self.api_url = f"https://api.telegram.org/bot{bot_token}"
+
+        # 初始化订阅管理
+        self.subscription_manager = SubscriptionManager(db_path=db_path)
+        self.alert_filter = AlertFilter(self.subscription_manager)
+        self.command_parser = CommandParser()
+        self.currency_config = CurrencyConfig()
+
         logger.info(f"Telegram Bot 初始化成功")
 
     def send_message(
@@ -238,6 +256,347 @@ class TelegramBot:
         except requests.RequestException as e:
             logger.error(f"Bot 连接测试失败: {e}")
             return False
+
+    # ==================== 命令处理方法 ====================
+
+    def handle_command(self, chat_id: str, text: str, user_id: Optional[int] = None) -> dict:
+        """
+        处理用户命令
+
+        Args:
+            chat_id: 聊天 ID
+            text: 命令文本
+            user_id: 用户 ID（可选）
+
+        Returns:
+            处理结果
+        """
+        try:
+            # 解析命令
+            result = self.command_parser.parse_command(text)
+
+            if result['status'] == 'error':
+                return self.send_error_message(chat_id, result['error'])
+
+            command = result.get('command')
+
+            # 使用 chat_id 作为 user_id（如果未提供）
+            if user_id is None:
+                try:
+                    user_id = int(chat_id)
+                except (ValueError, TypeError):
+                    user_id = hash(chat_id)
+
+            # 命令路由
+            if command == 'subscribe':
+                return self._handle_subscribe(chat_id, user_id, result)
+            elif command == 'unsubscribe':
+                return self._handle_unsubscribe(chat_id, user_id, result)
+            elif command == 'subscribe_signal':
+                return self._handle_subscribe_signal(chat_id, user_id, result)
+            elif command == 'unsubscribe_signal':
+                return self._handle_unsubscribe_signal(chat_id, user_id, result)
+            elif command == 'subscribe_currency':
+                return self._handle_subscribe_currency(chat_id, user_id, result)
+            elif command == 'unsubscribe_currency':
+                return self._handle_unsubscribe_currency(chat_id, user_id, result)
+            elif command == 'mysubscriptions':
+                return self._handle_mysubscriptions(chat_id, user_id)
+            elif command == 'my_currencies':
+                return self._handle_my_currencies(chat_id, user_id)
+            elif command == 'list_currencies':
+                return self._handle_list_currencies(chat_id)
+            elif command == 'frequency':
+                return self._handle_frequency(chat_id, user_id, result)
+            elif command == 'help':
+                return self.send_help_message(chat_id)
+            else:
+                return self.send_error_message(chat_id, f"未知命令: {command}")
+
+        except Exception as e:
+            logger.error(f"处理命令失败: {e}", exc_info=True)
+            return self.send_error_message(chat_id, f"处理命令时出错: {str(e)}")
+
+    def _handle_subscribe(self, chat_id: str, user_id: int, result: Dict) -> dict:
+        """处理订阅时间级别命令"""
+        timeframes = result['timeframes']
+        sub_result = self.subscription_manager.subscribe_timeframes(
+            user_id=user_id,
+            chat_id=chat_id,
+            platform='telegram',
+            timeframes=timeframes
+        )
+
+        if sub_result['status'] == 'success':
+            message = f"✅ *订阅成功*\n\n"
+            message += f"已添加时间级别: {', '.join(sub_result['added'])}\n"
+            message += f"当前订阅: {', '.join(sub_result['timeframes']) or '无'}"
+            return self.send_message(chat_id=chat_id, text=message, parse_mode='Markdown')
+        else:
+            return self.send_error_message(chat_id, sub_result['error'])
+
+    def _handle_unsubscribe(self, chat_id: str, user_id: int, result: Dict) -> dict:
+        """处理取消订阅时间级别命令"""
+        timeframes = result['timeframes']
+        sub_result = self.subscription_manager.unsubscribe_timeframes(
+            user_id=user_id,
+            chat_id=chat_id,
+            platform='telegram',
+            timeframes=timeframes
+        )
+
+        if sub_result['status'] == 'success':
+            message = f"✅ *取消订阅成功*\n\n"
+            if sub_result['removed']:
+                message += f"已移除时间级别: {', '.join(sub_result['removed'])}\n"
+                message += f"当前订阅: {', '.join(sub_result['timeframes']) or '无'}"
+            else:
+                message += f"未订阅这些时间级别: {', '.join(timeframes)}"
+            return self.send_message(chat_id=chat_id, text=message, parse_mode='Markdown')
+        else:
+            return self.send_error_message(chat_id, sub_result['error'])
+
+    def _handle_subscribe_signal(self, chat_id: str, user_id: int, result: Dict) -> dict:
+        """处理订阅信号类型命令"""
+        signals = result['signals']
+        sub_result = self.subscription_manager.subscribe_signals(
+            user_id=user_id,
+            chat_id=chat_id,
+            platform='telegram',
+            signals=signals
+        )
+
+        if sub_result['status'] == 'success':
+            message = f"✅ *信号订阅成功*\n\n"
+            message += f"已添加信号类型: {', '.join(sub_result['added'])}\n"
+            message += f"当前订阅: {', '.join(sub_result['signal_types']) or '无'}"
+            return self.send_message(chat_id=chat_id, text=message, parse_mode='Markdown')
+        else:
+            return self.send_error_message(chat_id, sub_result['error'])
+
+    def _handle_unsubscribe_signal(self, chat_id: str, user_id: int, result: Dict) -> dict:
+        """处理取消订阅信号类型命令"""
+        signals = result['signals']
+        sub_result = self.subscription_manager.unsubscribe_signals(
+            user_id=user_id,
+            chat_id=chat_id,
+            platform='telegram',
+            signals=signals
+        )
+
+        if sub_result['status'] == 'success':
+            message = f"✅ *取消信号订阅成功*\n\n"
+            if sub_result['removed']:
+                message += f"已移除信号类型: {', '.join(sub_result['removed'])}\n"
+                message += f"当前订阅: {', '.join(sub_result['signal_types']) or '无'}"
+            else:
+                message += f"未订阅这些信号类型: {', '.join(signals)}"
+            return self.send_message(chat_id=chat_id, text=message, parse_mode='Markdown')
+        else:
+            return self.send_error_message(chat_id, sub_result['error'])
+
+    def _handle_subscribe_currency(self, chat_id: str, user_id: int, result: Dict) -> dict:
+        """处理订阅币种命令"""
+        currencies = result['currencies']
+        sub_result = self.subscription_manager.subscribe_currencies(
+            user_id=user_id,
+            chat_id=chat_id,
+            platform='telegram',
+            currencies=currencies
+        )
+
+        if sub_result['status'] == 'success':
+            message = f"✅ *币种订阅成功*\n\n"
+            message += f"已添加币种: {', '.join(sub_result['added'])}\n"
+            message += f"当前订阅: {', '.join(sub_result['currencies'])}"
+            return self.send_message(chat_id=chat_id, text=message, parse_mode='Markdown')
+        else:
+            return self.send_error_message(chat_id, sub_result['error'])
+
+    def _handle_unsubscribe_currency(self, chat_id: str, user_id: int, result: Dict) -> dict:
+        """处理取消订阅币种命令"""
+        currencies = result['currencies']
+        sub_result = self.subscription_manager.unsubscribe_currencies(
+            user_id=user_id,
+            chat_id=chat_id,
+            platform='telegram',
+            currencies=currencies
+        )
+
+        if sub_result['status'] == 'success':
+            message = f"✅ *取消币种订阅成功*\n\n"
+            if sub_result['removed']:
+                message += f"已移除币种: {', '.join(sub_result['removed'])}\n"
+                message += f"当前订阅: {', '.join(sub_result['currencies'])}"
+            else:
+                message += f"未订阅这些币种: {', '.join(currencies)}"
+            return self.send_message(chat_id=chat_id, text=message, parse_mode='Markdown')
+        else:
+            return self.send_error_message(chat_id, sub_result['error'])
+
+    def _handle_mysubscriptions(self, chat_id: str, user_id: int) -> dict:
+        """处理查看订阅命令"""
+        subscription = self.subscription_manager.get_or_create_subscription(
+            user_id=user_id,
+            chat_id=chat_id,
+            platform='telegram'
+        )
+
+        message = "📋 *我的订阅*\n\n"
+
+        # 币种
+        currencies = subscription.get('currencies', [])
+        if currencies:
+            currency_names = [self.currency_config.get_currency_name(c) or c for c in currencies]
+            message += f"💰 *币种*: {', '.join(currencies)}\n"
+        else:
+            message += f"💰 *币种*: 无\n"
+
+        # 时间级别
+        timeframes = subscription.get('timeframes', [])
+        if timeframes:
+            message += f"⏰ *时间级别*: {', '.join(timeframes)}\n"
+        else:
+            message += f"⏰ *时间级别*: 全部\n"
+
+        # 信号类型
+        signals = subscription.get('signal_types', [])
+        if signals:
+            message += f"🔔 *信号类型*: {', '.join(signals)}\n"
+        else:
+            message += f"🔔 *信号类型*: 全部\n"
+
+        # 推送频率
+        frequency = subscription.get('frequency', 'all')
+        frequency_text = {
+            'all': '所有推送',
+            'alerts': '仅告警',
+            'daily': '每日摘要',
+            'none': '暂停推送'
+        }.get(frequency, frequency)
+        message += f"📬 *推送频率*: {frequency_text}\n"
+
+        return self.send_message(chat_id=chat_id, text=message, parse_mode='Markdown')
+
+    def _handle_my_currencies(self, chat_id: str, user_id: int) -> dict:
+        """处理查看我的币种命令"""
+        subscription = self.subscription_manager.get_or_create_subscription(
+            user_id=user_id,
+            chat_id=chat_id,
+            platform='telegram'
+        )
+
+        currencies = subscription.get('currencies', [])
+        message = "💰 *我订阅的币种*\n\n"
+
+        if currencies:
+            for currency in currencies:
+                icon = self.currency_config.get_currency_icon(currency)
+                name = self.currency_config.get_currency_name(currency) or currency
+                message += f"{icon} *{currency}* - {name}\n"
+        else:
+            message += "未订阅任何币种"
+
+        return self.send_message(chat_id=chat_id, text=message, parse_mode='Markdown')
+
+    def _handle_list_currencies(self, chat_id: str) -> dict:
+        """处理列出所有币种命令"""
+        message = self.currency_config.format_currencies_list()
+        return self.send_message(chat_id=chat_id, text=message, parse_mode='Markdown')
+
+    def _handle_frequency(self, chat_id: str, user_id: int, result: Dict) -> dict:
+        """处理设置推送频率命令"""
+        frequency = result['frequency']
+        sub_result = self.subscription_manager.set_frequency(
+            user_id=user_id,
+            chat_id=chat_id,
+            platform='telegram',
+            frequency=frequency
+        )
+
+        if sub_result['status'] == 'success':
+            frequency_text = {
+                'all': '所有推送',
+                'alerts': '仅告警',
+                'daily': '每日摘要',
+                'none': '暂停推送'
+            }.get(frequency, frequency)
+
+            message = f"✅ *推送频率已设置*\n\n"
+            message += f"当前设置: {frequency_text}"
+            return self.send_message(chat_id=chat_id, text=message, parse_mode='Markdown')
+        else:
+            return self.send_error_message(chat_id, sub_result['error'])
+
+    # ==================== 辅助方法 ====================
+
+    def send_help_message(self, chat_id: str) -> dict:
+        """发送帮助消息"""
+        message = self.command_parser.format_help_message()
+        return self.send_message(chat_id=chat_id, text=message, parse_mode='Markdown')
+
+    def send_error_message(self, chat_id: str, error: str) -> dict:
+        """发送错误消息"""
+        message = f"❌ *错误*\n\n{error}"
+        return self.send_message(chat_id=chat_id, text=message, parse_mode='Markdown')
+
+    def send_success_message(self, chat_id: str, message: str) -> dict:
+        """发送成功消息"""
+        success_msg = f"✅ *成功*\n\n{message}"
+        return self.send_message(chat_id=chat_id, text=success_msg, parse_mode='Markdown')
+
+    # ==================== 订阅检查方法 ====================
+
+    def should_send_report(self, user_id: int, chat_id: str, currency: str, timeframe: str) -> bool:
+        """
+        检查是否应该发送报告
+
+        Args:
+            user_id: 用户 ID
+            chat_id: 聊天 ID
+            currency: 币种
+            timeframe: 时间级别
+
+        Returns:
+            是否应该发送
+        """
+        return self.alert_filter.should_send_report(
+            user_id=user_id,
+            chat_id=chat_id,
+            platform='telegram',
+            currency=currency,
+            timeframe=timeframe
+        )
+
+    def should_send_alert(
+        self,
+        user_id: int,
+        chat_id: str,
+        signal_type: str,
+        timeframe: str,
+        currency: str = 'btc'
+    ) -> bool:
+        """
+        检查是否应该发送告警
+
+        Args:
+            user_id: 用户 ID
+            chat_id: 聊天 ID
+            signal_type: 信号类型
+            timeframe: 时间级别
+            currency: 币种
+
+        Returns:
+            是否应该发送
+        """
+        return self.alert_filter.should_send_alert(
+            user_id=user_id,
+            chat_id=chat_id,
+            platform='telegram',
+            signal_type=signal_type,
+            timeframe=timeframe,
+            currency=currency
+        )
 
 
 if __name__ == "__main__":

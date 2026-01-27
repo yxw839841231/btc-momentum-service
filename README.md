@@ -1,13 +1,15 @@
 # BTC 动能分析服务
 
-基于自定义动能理论的 BTC 多时间级别分析服务，支持定时分析、Telegram/飞书推送和 Web 报告查看。
+基于自定义动能理论的 BTC 多时间级别分析服务，支持定时分析、Telegram/飞书推送、订阅管理和 Web 报告查看。
 
 ## 功能特性
 
 - ✅ **多时间级别分析**：8个时间级别（2d/1d/12h/6h/4h/2h/1h/30m）
 - ✅ **动能理论分析**：线段分类、背离检测、单位周期判断
+- ✅ **订阅管理**：用户自定义接收内容，支持时间级别、信号类型、币种订阅
+- ✅ **多币种支持**：支持 BTC、ETH、SOL 等 10 种主流加密货币
 - ✅ **自动推送**：支持推送到 Telegram 和飞书
-- ✅ **实时价格**：包含 BTC 实时价格和24小时变化
+- ✅ **实时价格**：包含实时价格和24小时变化
 - ✅ **Web 报告**：美观的 HTML 报告托管在 GitHub Pages
 - ✅ **零成本部署**：基于 GitHub Actions，完全免费
 - ✅ **多平台支持**：可同时推送到 Telegram 和飞书
@@ -209,6 +211,83 @@ schedule:
 
 ## 功能说明
 
+### 订阅管理功能
+
+本项目支持完整的订阅管理系统，允许用户自定义接收哪些通知。
+
+#### 支持的订阅类型
+
+**1. 时间级别订阅**
+- 订阅感兴趣的时间级别（如 1d、4h、1h）
+- 只接收订阅时间级别的分析报告
+- 未设置则默认接收所有时间级别
+
+**2. 信号类型订阅**
+- 订阅特定信号类型（背离、买点、卖点等）
+- 只接收订阅类型的告警通知
+- 未设置则默认接收所有信号类型
+
+**3. 币种订阅**
+- 订阅感兴趣的加密货币（BTC、ETH、SOL 等）
+- 每个币种独立分析报告
+- 默认只订阅 BTC
+
+**4. 推送频率**
+- `all` - 接收所有推送（默认）
+- `alerts` - 仅重要告警
+- `daily` - 每日摘要
+- `none` - 暂停推送
+
+#### Telegram Bot 命令
+
+| 命令 | 说明 | 示例 |
+|------|------|------|
+| `/subscribe <时间级别>` | 订阅时间级别 | `/subscribe 1d 4h 1h` |
+| `/unsubscribe <时间级别>` | 取消订阅时间级别 | `/unsubscribe 30m` |
+| `/subscribe_signal <类型>` | 订阅信号类型 | `/subscribe_signal divergence` |
+| `/unsubscribe_signal <类型>` | 取消订阅信号类型 | `/unsubscribe_signal sell_signal` |
+| `/subscribe_currency <币种>` | 订阅币种 | `/subscribe_currency btc eth sol` |
+| `/unsubscribe_currency <币种>` | 取消订阅币种 | `/unsubscribe_currency eth` |
+| `/mysubscriptions` | 查看我的订阅 | `/mysubscriptions` |
+| `/my_currencies` | 查看我订阅的币种 | `/my_currencies` |
+| `/list_currencies` | 列出所有支持的币种 | `/list_currencies` |
+| `/frequency <频率>` | 设置推送频率 | `/frequency alerts` |
+| `/help` | 帮助信息 | `/help` |
+
+#### 支持的时间级别
+
+`2d`、`1d`、`12h`、`6h`、`4h`、`2h`、`1h`、`30m`
+
+#### 支持的信号类型
+
+- `divergence` - 背离信号
+- `buy_signal` - 买点信号
+- `sell_signal` - 卖点信号
+- `discrete_control` - 分立调控
+
+#### 支持的币种
+
+BTC、ETH、SOL、BNB、XRP、ADA、DOGE、DOT、MATIC、AVAX
+
+#### 使用示例
+
+```bash
+# 订阅日线和4小时线
+/subscribe 1d 4h
+
+# 订阅 BTC、ETH、SOL
+/subscribe_currency btc eth sol
+
+# 订阅背离信号
+/subscribe_signal divergence
+
+# 设置仅接收告警
+/frequency alerts
+
+# 查看当前订阅
+/mysubscriptions
+```
+
 ### 动能理论分析
 
 本项目实现了基于 MACD 的多时间级别动能分析理论：
@@ -269,22 +348,22 @@ HTML 报告包含：
 - [x] Telegram Bot 基础功能
 - [x] HTML 报告生成
 - [x] GitHub Actions 部署
+- [x] 订阅管理系统
+- [x] 多币种支持
+- [x] 数据库持久化（SQLite）
 
 ### 🚧 开发中
 
 - [ ] 完整的动能理论分析逻辑
 - [ ] 实时告警系统
-- [ ] 订阅管理功能
-
-- [ ] 数据库持久化
 - [ ] 交互式图表（ECharts）
 
 ### 📋 计划中
 
 - [ ] Web API 接口
-- [ ] 用户订阅管理
 - [ ] 历史数据对比
 - [ ] 性能优化
+- [ ] Web 订阅管理界面
 
 ## 故障排查
 

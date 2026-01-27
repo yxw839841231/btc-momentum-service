@@ -7,6 +7,14 @@ import logging
 from typing import Optional, Dict, List
 import requests
 import json as json_module
+import sys
+from pathlib import Path
+
+# 添加父目录到路径以导入其他模块
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
+from src.subscription_manager import SubscriptionManager, AlertFilter
+from src.currency_config import CurrencyConfig
 
 # 配置日志
 logging.basicConfig(
@@ -19,14 +27,21 @@ logger = logging.getLogger(__name__)
 class FeishuBot:
     """飞书机器人客户端"""
 
-    def __init__(self, webhook_url: str):
+    def __init__(self, webhook_url: str, db_path: str = "data/subscriptions.db"):
         """
         初始化飞书机器人
 
         Args:
             webhook_url: 飞书机器人 Webhook URL
+            db_path: 订阅数据库路径
         """
         self.webhook_url = webhook_url
+
+        # 初始化订阅管理
+        self.subscription_manager = SubscriptionManager(db_path=db_path)
+        self.alert_filter = AlertFilter(self.subscription_manager)
+        self.currency_config = CurrencyConfig()
+
         logger.info(f"飞书机器人初始化成功")
 
     def send_text(self, content: str) -> dict:
@@ -283,6 +298,59 @@ class FeishuBot:
         test_message = "✅ 飞书机器人连接测试成功！"
         result = self.send_text(test_message)
         return result.get("status") == "success"
+
+    # ==================== 订阅检查方法 ====================
+
+    def should_send_report(self, user_id: int, chat_id: str, currency: str, timeframe: str) -> bool:
+        """
+        检查是否应该发送报告
+
+        Args:
+            user_id: 用户 ID
+            chat_id: 聊天 ID
+            currency: 币种
+            timeframe: 时间级别
+
+        Returns:
+            是否应该发送
+        """
+        return self.alert_filter.should_send_report(
+            user_id=user_id,
+            chat_id=chat_id,
+            platform='feishu',
+            currency=currency,
+            timeframe=timeframe
+        )
+
+    def should_send_alert(
+        self,
+        user_id: int,
+        chat_id: str,
+        signal_type: str,
+        timeframe: str,
+        currency: str = 'btc'
+    ) -> bool:
+        """
+        检查是否应该发送告警
+
+        Args:
+            user_id: 用户 ID
+            chat_id: 聊天 ID
+            signal_type: 信号类型
+            timeframe: 时间级别
+            currency: 币种
+
+        Returns:
+            是否应该发送
+        """
+        return self.alert_filter.should_send_alert(
+            user_id=user_id,
+            chat_id=chat_id,
+            platform='feishu',
+            signal_type=signal_type,
+            timeframe=timeframe,
+            currency=currency
+        )
 
 
 if __name__ == "__main__":

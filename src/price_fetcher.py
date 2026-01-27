@@ -1,12 +1,19 @@
 """
-BTC 价格获取模块
-从交易所获取实时价格数据
+价格获取模块
+从交易所获取实时价格数据（支持多币种）
 """
 
 import logging
 import requests
 from datetime import datetime
-from typing import Dict, Optional
+from typing import Dict, Optional, List
+import sys
+from pathlib import Path
+
+# 添加父目录到路径
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
+from src.currency_config import CurrencyConfig
 
 # 配置日志
 logging.basicConfig(
@@ -16,8 +23,8 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-class BTCPriceFetcher:
-    """BTC 价格获取器"""
+class PriceFetcher:
+    """价格获取器（支持多币种）"""
 
     def __init__(self, exchange: str = "okx"):
         """
@@ -27,22 +34,23 @@ class BTCPriceFetcher:
             exchange: 交易所名称 (okx, binance, etc.)
         """
         self.exchange = exchange
-        self.exchange_urls = {
-            "okx": "https://www.okx.com/api/v5/market/ticker",
-            "binance": "https://api.binance.com/api/v3/ticker/24hr?symbol=BTCUSDT",
-            "bybit": "https://api.bybit.com/v5/market/tickers?category=spot&symbol=BTCUSDT"
-        }
+        self.currency_config = CurrencyConfig()
         logger.info(f"价格获取器初始化: {exchange}")
 
-    def fetch_price_okx(self) -> Optional[Dict]:
+    def fetch_price_okx(self, symbol: str = "BTC") -> Optional[Dict]:
         """
         从 OKX 获取价格
+
+        Args:
+            symbol: 币种符号
 
         Returns:
             价格信息字典
         """
         try:
-            url = "https://www.okx.com/api/v5/market/ticker?instId=BTC-USDT"
+            # 获取交易对符号
+            inst_id = self.currency_config.get_exchange_symbol(symbol)
+            url = f"https://www.okx.com/api/v5/market/ticker?instId={inst_id}"
             response = requests.get(url, timeout=10)
             response.raise_for_status()
 
@@ -63,6 +71,7 @@ class BTCPriceFetcher:
                 change_24h_pct_formatted = round(change_24h_pct, 2)
 
                 return {
+                    "symbol": symbol.upper(),
                     "price": price_formatted,
                     "price_raw": price,
                     "change_24h": change_24h_formatted,
@@ -74,18 +83,23 @@ class BTCPriceFetcher:
                     "exchange": "OKX"
                 }
         except Exception as e:
-            logger.error(f"从 OKX 获取价格失败: {e}")
+            logger.error(f"从 OKX 获取 {symbol} 价格失败: {e}")
             return None
 
-    def fetch_price_binance(self) -> Optional[Dict]:
+    def fetch_price_binance(self, symbol: str = "BTC") -> Optional[Dict]:
         """
         从 Binance 获取价格
+
+        Args:
+            symbol: 币种符号
 
         Returns:
             价格信息字典
         """
         try:
-            url = "https://api.binance.com/api/v3/ticker/24hr?symbol=BTCUSDT"
+            # Binance 使用不同的符号格式
+            binance_symbol = f"{symbol.upper()}USDT"
+            url = f"https://api.binance.com/api/v3/ticker/24hr?symbol={binance_symbol}"
             response = requests.get(url, timeout=10)
             response.raise_for_status()
 
@@ -99,6 +113,7 @@ class BTCPriceFetcher:
             change_24h_pct_formatted = round(change_24h_pct, 2)
 
             return {
+                "symbol": symbol.upper(),
                 "price": price_formatted,
                 "price_raw": price,
                 "change_24h": change_24h_formatted,
@@ -110,14 +125,15 @@ class BTCPriceFetcher:
                 "exchange": "Binance"
             }
         except Exception as e:
-            logger.error(f"从 Binance 获取价格失败: {e}")
+            logger.error(f"从 Binance 获取 {symbol} 价格失败: {e}")
             return None
 
-    def fetch_price(self, exchange: Optional[str] = None) -> Dict:
+    def fetch_price(self, symbol: str = "BTC", exchange: Optional[str] = None) -> Dict:
         """
-        获取 BTC 价格（自动尝试多个交易所）
+        获取币种价格（自动尝试多个交易所）
 
         Args:
+            symbol: 币种符号
             exchange: 指定交易所，如果为 None 则尝试配置的交易所
 
         Returns:
@@ -127,30 +143,31 @@ class BTCPriceFetcher:
 
         # 先尝试指定的交易所
         if exchange_to_use == "okx":
-            price_data = self.fetch_price_okx()
+            price_data = self.fetch_price_okx(symbol)
             if price_data:
                 return price_data
         elif exchange_to_use == "binance":
-            price_data = self.fetch_price_binance()
+            price_data = self.fetch_price_binance(symbol)
             if price_data:
                 return price_data
 
         # 如果失败，尝试其他交易所
-        logger.warning(f"从 {exchange_to_use} 获取价格失败，尝试其他交易所")
+        logger.warning(f"从 {exchange_to_use} 获取 {symbol} 价格失败，尝试其他交易所")
 
         # 尝试 OKX
-        price_data = self.fetch_price_okx()
+        price_data = self.fetch_price_okx(symbol)
         if price_data:
             return price_data
 
         # 尝试 Binance
-        price_data = self.fetch_price_binance()
+        price_data = self.fetch_price_binance(symbol)
         if price_data:
             return price_data
 
         # 如果全部失败，返回默认值
-        logger.error("所有交易所价格获取失败，使用默认值")
+        logger.error(f"所有交易所获取 {symbol} 价格失败，使用默认值")
         return {
+            "symbol": symbol.upper(),
             "price": "N/A",
             "price_raw": 0,
             "change_24h": 0,
@@ -162,16 +179,37 @@ class BTCPriceFetcher:
             "exchange": "N/A"
         }
 
+    def fetch_prices(self, symbols: List[str]) -> Dict[str, Dict]:
+        """
+        批量获取多个币种价格
+
+        Args:
+            symbols: 币种符号列表
+
+        Returns:
+            币种到价格的映射字典
+        """
+        prices = {}
+        for symbol in symbols:
+            price_data = self.fetch_price(symbol)
+            prices[symbol.upper()] = price_data
+        return prices
+
+
+# 向后兼容的别名
+BTCPriceFetcher = PriceFetcher
+
 
 if __name__ == "__main__":
     # 测试代码
-    fetcher = BTCPriceFetcher()
-    price_data = fetcher.fetch_price()
+    fetcher = PriceFetcher()
 
+    # 测试单个币种
+    print("=" * 60)
+    print("BTC 价格信息")
+    print("=" * 60)
+    price_data = fetcher.fetch_price("BTC")
     if price_data:
-        print("=" * 60)
-        print("BTC 价格信息")
-        print("=" * 60)
         print(f"当前价格: ${price_data['price']}")
         print(f"24h涨跌: {price_data['change_24h']:+.2f} ({price_data['change_24h_pct']:+.2f}%)")
         print(f"24h最高: ${price_data['high_24h']:,.2f}")
@@ -182,3 +220,12 @@ if __name__ == "__main__":
         print("=" * 60)
     else:
         print("❌ 价格获取失败")
+
+    # 测试批量获取
+    print("\n批量获取价格:")
+    prices = fetcher.fetch_prices(["BTC", "ETH", "SOL"])
+    for symbol, data in prices.items():
+        if data.get("price") != "N/A":
+            print(f"  {symbol}: ${data['price']} ({data['change_24h_pct']:+.2f}%)")
+        else:
+            print(f"  {symbol}: 获取失败")
