@@ -180,13 +180,25 @@ class FeishuBot:
         Returns:
             卡片数据
         """
-        # 获取价格信息
-        btc_price = analysis_data.get('btc_price', {})
-        current_price = btc_price.get('price', 'N/A')
-        price_change = btc_price.get('change_24h', 0)
-        price_change_pct = btc_price.get('change_24h_pct', 0)
+        # 获取币种信息
+        currency = analysis_data.get('currency', 'BTC').upper()
+
+        # 获取价格信息（兼容新旧字段名）
+        price_data = analysis_data.get('currency_price', {}) or analysis_data.get('btc_price', {})
+        current_price = price_data.get('price', 'N/A')
+        price_change = price_data.get('change_24h', 0)
+        price_change_pct = price_data.get('change_24h_pct', 0)
         price_indicator = "📈" if price_change >= 0 else "📉"
         price_color = "green" if price_change >= 0 else "red"
+
+        # 币种图标映射
+        currency_icons = {
+            'BTC': '₿', 'ETH': 'Ξ', 'SOL': '◎',
+            'SUI': '◆', 'BNB': '◆', 'XRP': '✕',
+            'ADA': '◆', 'DOGE': 'Ð', 'DOT': '◆',
+            'MATIC': '◆', 'AVAX': '◆'
+        }
+        icon = currency_icons.get(currency, '●')
 
         # 格式化时间
         timestamp = analysis_data.get('timestamp', 'N/A')
@@ -199,10 +211,10 @@ class FeishuBot:
                 pass
 
         # 构建卡片内容
-        title = "📊 BTC 动能分析报告"
+        title = f"📊 {currency} 动能分析报告"
 
-        content = f"""**{price_indicator} 当前价格**
-**{current_price}**
+        content = f"""**{price_indicator} {icon} {currency} 当前价格**
+**${current_price}**
 24h: {price_change:+.2f} ({price_change_pct:+.2f}%)
 
 ---
