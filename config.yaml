@@ -1,0 +1,62 @@
+# BTC 动能分析服务配置文件
+
+# Telegram Bot 配置
+telegram:
+  bot_token: "${TELEGRAM_BOT_TOKEN}"  # 从环境变量读取
+  default_chat_id: "${TELEGRAM_CHAT_ID}"  # 从环境变量读取
+
+# 数据获取配置
+data:
+  symbol: "BTC-USDT"
+  exchange: "okx"
+  timeframes:
+    - "2d"
+    - "1d"
+    - "12h"
+    - "6h"
+    - "4h"
+    - "2h"
+    - "1h"
+    - "30m"
+  limit: 200  # 每个时间级别获取的K线数量
+  cache_dir: "data"
+
+# 分析配置
+analysis:
+  ema_periods: [26, 52]
+  macd_params: [12, 26, 9]
+  theory_file: "THEORY.md"  # 动能理论定义文件
+
+# 报告配置
+reports:
+  output_dir: "reports"
+  formats:
+    - "html"
+    - "json"
+  template_dir: "templates"
+
+# GitHub Pages 配置（用于托管报告）
+github_pages:
+  enabled: true
+  base_url: "https://username.github.io/btc-momentum-service/reports"
+
+# 调度配置
+scheduler:
+  timezone: "UTC"
+  cron_expression: "0 * * * *"  # 每小时执行
+
+# 告警配置
+alerts:
+  enabled: true
+  cooldown_hours: 12  # 相同告警的冷却时间
+  signal_types:
+    - "divergence"  # 背离
+    - "buy_signal"  # 买点
+    - "sell_signal" # 卖点
+    - "discrete_control"  # 分立调控
+
+# 日志配置
+logging:
+  level: "INFO"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  file: "logs/service.log"

@@ -1,0 +1,35 @@
+# BTC 动能分析服务 - Python 依赖
+
+# 数据处理
+pandas>=2.0.0
+numpy>=1.24.0
+
+# HTTP 请求
+requests>=2.31.0
+
+# Telegram Bot
+python-telegram-bot>=20.0
+
+# 配置管理
+pyyaml>=6.0
+
+# Web 框架（可选，用于 API）
+# fastapi>=0.104.0
+# uvicorn>=0.24.0
+
+# 调度器（本地测试用）
+apscheduler>=3.10.0
+
+# 技术指标计算
+# TA-Lib (需要单独安装，这里列出供参考)
+# ta-lib>=0.4.0
+
+# 数据库
+# sqlalchemy>=2.0.0
+
+# 测试
+# pytest>=7.4.0
+# pytest-cov>=4.1.0
+
+# 日志
+python-json-logger>=2.0.0
