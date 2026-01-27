@@ -18,7 +18,7 @@ from src.analyzer import MomentumAnalyzer
 from src.telegram_bot import TelegramBot
 from src.feishu_bot import FeishuBot
 from src.report_generator import HTMLReportGenerator
-from src.price_fetcher import BTCPriceFetcher
+from src.multi_currency_fetcher import MultiCurrencyPriceFetcher
 
 # 配置日志
 logging.basicConfig(
@@ -78,25 +78,10 @@ def analyze_currency(currency, config, timeframes):
     try:
         # 获取价格
         logger.info(f"💰 获取 {currency} 实时价格...")
-        price_fetcher = BTCPriceFetcher(exchange=config["analysis"]["exchange"])
+        price_fetcher = MultiCurrencyPriceFetcher(exchange=config["analysis"]["exchange"])
 
-        # 注意：当前 price_fetcher 只支持 BTC
-        # 对于其他币种，需要扩展或使用默认值
-        if currency.upper() == "BTC":
-            price_data = price_fetcher.fetch_price()
-        else:
-            logger.warning(f"⚠️  {currency} 价格获取功能待实现，使用模拟数据")
-            price_data = {
-                "price": "0.00",
-                "price_raw": 0,
-                "change_24h": 0,
-                "change_24h_pct": 0,
-                "high_24h": 0,
-                "low_24h": 0,
-                "volume": 0,
-                "timestamp": datetime.now().isoformat(),
-                "exchange": "N/A"
-            }
+        # 获取币种价格
+        price_data = price_fetcher.fetch_currency_price(currency)
 
         if price_data and price_data.get("price") != "N/A" and price_data["price"] != "0.00":
             logger.info(f"✅ {currency} 价格: ${price_data['price']} ({price_data['change_24h_pct']:+.2f}%)")
