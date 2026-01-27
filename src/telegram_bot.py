@@ -35,7 +35,7 @@ class TelegramBot:
         self,
         chat_id: Optional[str] = None,
         text: str = "",
-        parse_mode: str = "Markdown"
+        parse_mode: Optional[str] = None
     ) -> dict:
         """
         发送消息
@@ -43,7 +43,7 @@ class TelegramBot:
         Args:
             chat_id: Chat ID (如果为 None，使用 default_chat_id)
             text: 消息文本
-            parse_mode: 解析模式 (Markdown, HTML, None)
+            parse_mode: 解析模式 (Markdown, HTML, None) - 默认 None
 
         Returns:
             API 响应
@@ -63,6 +63,7 @@ class TelegramBot:
             "disable_web_page_preview": False
         }
 
+        # 只在明确指定 parse_mode 时才添加
         if parse_mode:
             data["parse_mode"] = parse_mode
 
@@ -96,7 +97,7 @@ class TelegramBot:
         """
         # TODO: 根据实际分析数据格式化
 
-        message = f"""📊 *BTC 动能分析*
+        message = f"""📊 BTC 动能分析
 
 时间: {analysis_data.get('timestamp', 'N/A')}
 
@@ -104,13 +105,14 @@ class TelegramBot:
 【中周期】12h ⚠️  6h 调整 4h ↓
 【小周期】2h ↓ 1h ↓ 30m ⟲
 
-🔴 *关键信号*:
+🔴 关键信号:
 • 12h 出现顶背离
 • 30m 柱状图收敛，可能反转
 
-📈 [完整报告]({report_url})
+📈 完整报告:
+{report_url}
 
-💡 *操作建议*: 观望
+💡 操作建议: 观望
 """
 
         return message

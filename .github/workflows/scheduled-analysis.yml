@@ -12,6 +12,12 @@ on:
   # push:
   #   branches: [ main ]
 
+# 设置权限
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
 jobs:
   analyze:
     runs-on: ubuntu-latest
