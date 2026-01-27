@@ -64,6 +64,7 @@ jobs:
           name: logs-${{ github.run_number }}
           path: logs/
           retention-days: 7
+          if-no-files-found: ignore  # 如果没有日志文件，忽略错误
 
       - name: 通知失败
         if: failure()
