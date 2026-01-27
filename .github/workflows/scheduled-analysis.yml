@@ -49,7 +49,7 @@ jobs:
 
       - name: 部署到 GitHub Pages
         if: success()
-        uses: peaceiris/actions-gh-pages@v3
+        uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./reports
@@ -59,7 +59,7 @@ jobs:
 
       - name: 上传日志（失败时）
         if: failure()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: logs-${{ github.run_number }}
           path: logs/
