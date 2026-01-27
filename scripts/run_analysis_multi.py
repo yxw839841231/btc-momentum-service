@@ -92,9 +92,12 @@ def analyze_currency(currency, config, timeframes):
         logger.info(f"📊 初始化 {currency} 分析器...")
         analyzer = MomentumAnalyzer()
 
-        # 执行分析
+        # 构建交易对符号
+        symbol = f"{currency}-USDT"
+
+        # 执行分析 - 传递正确的交易对符号
         logger.info(f"📈 执行 {currency} 动能分析...")
-        analysis_result = analyzer.run_full_analysis()
+        analysis_result = analyzer.run_full_analysis(symbol=symbol)
 
         if analysis_result["status"] != "success":
             logger.error(f"❌ {currency} 分析失败: {analysis_result}")

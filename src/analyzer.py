@@ -63,7 +63,9 @@ class MomentumAnalyzer:
         """
         logger.info(f"开始获取数据: {symbol}, 时间级别: {timeframes}")
 
-        output_file = self.data_dir / f"btc_multi_timeframe_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+        # 从 symbol 中提取币种符号（如 BTC-USDT -> BTC）
+        currency = symbol.split('-')[0] if '-' in symbol else 'BTC'
+        output_file = self.data_dir / f"{currency.lower()}_multi_timeframe_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
 
         script_path = self.scripts_dir / "fetch_btc_data.py"
 
@@ -199,19 +201,22 @@ class MomentumAnalyzer:
         logger.info(f"报告已生成: {report_file}")
         return str(report_file)
 
-    def run_full_analysis(self) -> Dict:
+    def run_full_analysis(self, symbol: str = "BTC-USDT") -> Dict:
         """
         执行完整分析流程
+
+        Args:
+            symbol: 交易对符号（如 BTC-USDT, ETH-USDT, SUI-USDT）
 
         Returns:
             分析结果和报告路径
         """
         logger.info("=" * 50)
-        logger.info("开始完整分析流程")
+        logger.info(f"开始完整分析流程: {symbol}")
         logger.info("=" * 50)
 
         # 1. 获取数据
-        fetch_result = self.fetch_data()
+        fetch_result = self.fetch_data(symbol=symbol)
         if fetch_result["status"] != "success":
             return {
                 "status": "error",
