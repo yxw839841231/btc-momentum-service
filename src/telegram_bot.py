@@ -135,7 +135,10 @@ class TelegramBot:
         Returns:
             格式化的消息文本
         """
-        # TODO: 根据实际分析数据格式化
+        # 获取币种信息
+        currency = analysis_data.get('currency', 'BTC').upper()
+        currency_name = self.currency_config.get_currency_name(currency) or currency
+        icon = self.currency_config.get_currency_icon(currency)
 
         # 简化时间格式，避免特殊字符
         timestamp = analysis_data.get('timestamp', 'N/A')
@@ -148,14 +151,14 @@ class TelegramBot:
             except:
                 pass
 
-        # 获取价格信息
-        btc_price = analysis_data.get('btc_price', {})
-        current_price = btc_price.get('price', 'N/A')
-        price_change = btc_price.get('change_24h', 0)
-        price_change_pct = btc_price.get('change_24h_pct', 0)
+        # 获取价格信息（兼容新旧字段）
+        currency_price = analysis_data.get('currency_price') or analysis_data.get('btc_price', {})
+        current_price = currency_price.get('price', 'N/A')
+        price_change = currency_price.get('change_24h', 0)
+        price_change_pct = currency_price.get('change_24h_pct', 0)
         price_indicator = "📈" if price_change >= 0 else "📉"
 
-        message = f"""📊 BTC 动能分析
+        message = f"""📊 {icon} {currency} 动能分析
 
 💰 价格: {price_indicator} ${current_price}
    24h: {price_change:+.2f} ({price_change_pct:+.2f}%)
