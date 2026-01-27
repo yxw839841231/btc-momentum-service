@@ -19,6 +19,7 @@ from src.telegram_bot import TelegramBot
 from src.feishu_bot import FeishuBot
 from src.report_generator import HTMLReportGenerator
 from src.multi_currency_fetcher import MultiCurrencyPriceFetcher
+from src.alert_manager import AlertManager, check_all_alerts
 
 # 配置日志
 logging.basicConfig(
@@ -175,6 +176,27 @@ def main():
         logger.info(f"成功的币种: {', '.join([r['currency'] for r in all_results])}")
     logger.info(f"{'='*60}\n")
 
+    # 检查价格预警
+    logger.info(f"🚨 检查价格预警...")
+    alert_manager = AlertManager()
+    all_alerts = []
+
+    for result in all_results:
+        currency = result["currency"]
+        price_data = result["price_data"]
+        analysis_result = result["analysis_result"]
+
+        # 检查该币种的告警
+        alerts = check_all_alerts(currency, price_data, analysis_result)
+        all_alerts.extend(alerts)
+
+    if all_alerts:
+        logger.warning(f"⚠️  检测到 {len(all_alerts)} 个预警")
+        for alert in all_alerts:
+            logger.warning(f"  - {alert.format_message()}")
+    else:
+        logger.info(f"✅ 无预警")
+
     if not all_results:
         logger.error("❌ 所有币种分析均失败")
         return 1
@@ -222,6 +244,18 @@ def main():
                 logger.warning(f"  ⚠️  {currency} Telegram 推送失败: {send_result.get('error')}")
 
         logger.info(f"📱 Telegram 推送完成: {telegram_success}/{len(all_results)} 成功")
+
+        # 如果有告警，发送告警汇总
+        if all_alerts:
+            logger.info(f"  正在推送告警汇总到 Telegram...")
+            alert_summary = alert_manager.format_alerts_summary(all_alerts)
+            alert_message = f"🚨 **价格预警汇总**\n\n{alert_summary}\n\n时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+
+            alert_result = telegram_bot.send_message(text=alert_message)
+            if alert_result.get("status") == "success":
+                logger.info(f"  ✅ 告警汇总推送成功")
+            else:
+                logger.warning(f"  ⚠️  告警汇总推送失败")
 
     # 推送到飞书（使用合并消息）
     if feishu_enabled and config["feishu"]["webhook_url"]:

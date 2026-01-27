@@ -67,6 +67,10 @@ class MultiCurrencyPriceFetcher:
         if not price_data:
             price_data = self._fetch_from_binance(symbol_upper)
 
+        # 如果 Binance 失败，尝试从 CoinGecko 获取
+        if not price_data:
+            price_data = self._fetch_from_coingecko(symbol_upper)
+
         # 如果都失败，使用模拟数据
         if not price_data and use_fallback:
             logger.warning(f"{symbol_upper} 价格获取失败，使用模拟数据")
@@ -114,6 +118,64 @@ class MultiCurrencyPriceFetcher:
                 return None
         except Exception as e:
             logger.debug(f"从 Binance 获取 {symbol} 失败: {e}")
+            return None
+
+    def _fetch_from_coingecko(self, symbol: str) -> Optional[Dict]:
+        """从 CoinGecko API 获取价格"""
+        # CoinGecko API coin ID 映射
+        coin_ids = {
+            'BTC': 'bitcoin',
+            'ETH': 'ethereum',
+            'SOL': 'solana',
+            'SUI': 'sui',
+            'BNB': 'binancecoin',
+            'XRP': 'ripple',
+            'ADA': 'cardano',
+            'DOGE': 'dogecoin',
+            'DOT': 'polkadot',
+            'MATIC': 'matic-network',
+            'AVAX': 'avalanche-2'
+        }
+
+        coin_id = coin_ids.get(symbol)
+        if not coin_id:
+            logger.debug(f"CoinGecko 不支持 {symbol}")
+            return None
+
+        try:
+            url = "https://api.coingecko.com/api/v3/simple/price"
+            params = {
+                "ids": coin_id,
+                "vs_currencies": "usd",
+                "include_24hr_change": "true"
+            }
+
+            response = requests.get(url, params=params, timeout=10)
+            response.raise_for_status()
+
+            data = response.json()
+
+            if coin_id in data:
+                coin_data = data[coin_id]
+                price = coin_data.get("usd", 0)
+                change_24h_pct = coin_data.get("usd_24h_change", 0)
+
+                if price > 0:
+                    # 估算 24h 高低价（简化计算）
+                    price_24h_high = price * (1 + abs(change_24h_pct) / 100 * 0.6)
+                    price_24h_low = price * (1 - abs(change_24h_pct) / 100 * 0.4)
+                    change_24h = price - price_24h_low
+
+                    return self._format_price_data_coingecko(symbol, price, change_24h, change_24h_pct)
+                else:
+                    logger.warning(f"CoinGecko 返回的 {symbol} 价格为0")
+                    return None
+            else:
+                logger.debug(f"CoinGecko 响应中没有 {symbol} 的数据")
+                return None
+
+        except Exception as e:
+            logger.debug(f"从 CoinGecko 获取 {symbol} 失败: {e}")
             return None
 
     def _format_price_data(self, symbol: str, price: float, ticker: dict) -> Dict:
@@ -176,6 +238,33 @@ class MultiCurrencyPriceFetcher:
             "volume": float(ticker.get("volume", 0)),
             "timestamp": datetime.now().isoformat(),
             "exchange": "Binance"
+        }
+
+    def _format_price_data_coingecko(self, symbol: str, price: float, change_24h: float, change_24h_pct: float) -> Dict:
+        """格式化 CoinGecko 价格数据"""
+        if price < 0.01:
+            price_formatted = f"{price:.6f}".rstrip('0').rstrip('.')
+        elif price < 1:
+            price_formatted = f"{price:.4f}".rstrip('0').rstrip('.')
+        else:
+            price_formatted = f"{price:,.2f}"
+
+        change_24h_formatted = round(change_24h, 4) if price < 1 else round(change_24h, 2)
+        change_24h_pct_formatted = round(change_24h_pct, 2)
+
+        logger.info(f"✅ {symbol} 价格: ${price_formatted} ({change_24h_pct_formatted:+.2f}%) [CoinGecko]")
+
+        return {
+            "symbol": symbol,
+            "price": price_formatted,
+            "price_raw": price,
+            "change_24h": change_24h_formatted,
+            "change_24h_pct": change_24h_pct_formatted,
+            "high_24h": price * 1.02,  # 估算
+            "low_24h": price * 0.98,   # 估算
+            "volume": 1000000,         # CoinGecko free API 不提供成交量
+            "timestamp": datetime.now().isoformat(),
+            "exchange": "CoinGecko"
         }
 
     def _get_fallback_price(self, symbol: str) -> Dict:
