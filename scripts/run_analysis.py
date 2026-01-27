@@ -117,6 +117,7 @@ def main():
         index_url = "https://yxw839841231.github.io/btc-momentum-service/"
 
 <<<<<<< HEAD
+<<<<<<< HEAD
         # 5. 推送到消息平台（基于订阅）
         logger.info("📤 步骤 5: 推送到消息平台（基于订阅）")
 
@@ -202,6 +203,8 @@ def main():
 
             logger.info(f"📊 推送统计: Telegram {telegram_sent_count}, 飞书 {feishu_sent_count}")
 =======
+=======
+>>>>>>> parent of 6f81777... Add Feishu bot support for message pushing
         # 5. 推送到 Telegram
         logger.info("📤 步骤 4: 推送到 Telegram")
         bot = TelegramBot(bot_token=bot_token, default_chat_id=chat_id)
@@ -220,6 +223,9 @@ def main():
             logger.warning(f"⚠️ Telegram 推送失败，但报告已生成: {send_result.get('error')}")
             logger.warning("报告链接: " + report_url)
             # 不要返回错误，因为报告已经成功生成
+<<<<<<< HEAD
+>>>>>>> parent of 6f81777... Add Feishu bot support for message pushing
+=======
 >>>>>>> parent of 6f81777... Add Feishu bot support for message pushing
 
         logger.info("=" * 60)

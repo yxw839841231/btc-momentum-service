@@ -1,7 +1,11 @@
 # BTC 动能分析服务
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 基于自定义动能理论的 BTC 多时间级别分析服务，支持定时分析、Telegram/飞书推送、订阅管理和 Web 报告查看。
+=======
+基于自定义动能理论的 BTC 多时间级别分析服务，支持定时分析、Telegram 推送和 Web 报告查看。
+>>>>>>> parent of 6f81777... Add Feishu bot support for message pushing
 =======
 基于自定义动能理论的 BTC 多时间级别分析服务，支持定时分析、Telegram 推送和 Web 报告查看。
 >>>>>>> parent of 6f81777... Add Feishu bot support for message pushing
@@ -11,10 +15,14 @@
 - ✅ **多时间级别分析**：8个时间级别（2d/1d/12h/6h/4h/2h/1h/30m）
 - ✅ **动能理论分析**：线段分类、背离检测、单位周期判断
 <<<<<<< HEAD
+<<<<<<< HEAD
 - ✅ **订阅管理**：用户自定义接收内容，支持时间级别、信号类型、币种订阅
 - ✅ **多币种支持**：支持 BTC、ETH、SOL 等 10 种主流加密货币
 - ✅ **自动推送**：支持推送到 Telegram 和飞书
 - ✅ **实时价格**：包含实时价格和24小时变化
+=======
+- ✅ **自动推送**：每小时推送到 Telegram
+>>>>>>> parent of 6f81777... Add Feishu bot support for message pushing
 =======
 - ✅ **自动推送**：每小时推送到 Telegram
 >>>>>>> parent of 6f81777... Add Feishu bot support for message pushing
