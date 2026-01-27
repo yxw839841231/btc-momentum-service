@@ -79,19 +79,29 @@ def main():
         report_path = generator.generate_html(analysis_result, report_file)
         logger.info(f"✅ 报告已生成: {report_path}")
 
+        # 3.5 生成索引页面
+        logger.info("📋 生成索引页面")
+        import subprocess
+        subprocess.run([sys.executable, "scripts/generate_index.py"],
+                      cwd=Path(__file__).parent.parent)
+        logger.info("✅ 索引页面已生成")
+
         # 4. 构建报告 URL
         # TODO: 实际部署后需要配置正确的 GitHub Pages URL
         report_filename = Path(report_path).name
         report_url = f"https://yxw839841231.github.io/btc-momentum-service/reports/{report_filename}"
+        index_url = "https://yxw839841231.github.io/btc-momentum-service/"
 
         # 5. 推送到 Telegram
         logger.info("📤 步骤 4: 推送到 Telegram")
         bot = TelegramBot(bot_token=bot_token, default_chat_id=chat_id)
 
         # 直接尝试发送消息（不预先测试连接，避免超时问题）
+        # 发送包含主页链接和具体报告链接的消息
         send_result = bot.send_analysis_report(
             analysis_data=analysis_result,
-            report_url=report_url
+            report_url=report_url,
+            index_url=index_url
         )
 
         if send_result.get("status") == "success":

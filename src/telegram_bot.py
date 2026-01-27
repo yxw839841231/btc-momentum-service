@@ -105,13 +105,14 @@ class TelegramBot:
             logger.error(f"❌ 网络请求失败: {e}")
             return {"status": "error", "error": str(e)}
 
-    def format_analysis_summary(self, analysis_data: dict, report_url: str) -> str:
+    def format_analysis_summary(self, analysis_data: dict, report_url: str, index_url: str = "") -> str:
         """
         格式化分析摘要
 
         Args:
             analysis_data: 分析数据
             report_url: 报告链接
+            index_url: 主页链接
 
         Returns:
             格式化的消息文本
@@ -141,8 +142,11 @@ class TelegramBot:
 • 12h 出现顶背离
 • 30m 柱状图收敛，可能反转
 
-📈 完整报告:
+📈 最新报告:
 {report_url}
+
+🏠 所有报告:
+{index_url}
 
 💡 操作建议: 观望
 """
@@ -153,6 +157,7 @@ class TelegramBot:
         self,
         analysis_data: dict,
         report_url: str,
+        index_url: str = "",
         chat_id: Optional[str] = None
     ) -> dict:
         """
@@ -161,12 +166,13 @@ class TelegramBot:
         Args:
             analysis_data: 分析数据
             report_url: 报告链接
+            index_url: 主页链接
             chat_id: Chat ID
 
         Returns:
             发送结果
         """
-        message = self.format_analysis_summary(analysis_data, report_url)
+        message = self.format_analysis_summary(analysis_data, report_url, index_url)
         return self.send_message(chat_id=chat_id, text=message)
 
     def send_alert(

@@ -53,13 +53,19 @@ jobs:
         run: |
           python scripts/run_analysis.py
 
+      - name: 准备 GitHub Pages 部署
+        run: |
+          mkdir -p deploy
+          cp index.html deploy/
+          cp -r reports deploy/
+
       - name: 部署到 GitHub Pages
         if: success()
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./reports
-          destination_dir: reports
+          publish_dir: ./deploy
+          destination_dir: ./
           keep_files: true  # 保留历史报告
           commit_message: '更新分析报告 ${{ github.run_number }}'
 
