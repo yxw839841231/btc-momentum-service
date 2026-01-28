@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BTC 动能分析报告 - 2026-01-28 08:36</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #fff;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* 顶部标题卡片 */
+        .header-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 40px;
+            margin-bottom: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .header-title {
+            font-size: 2.5em;
+            font-weight: 700;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header-subtitle {
+            font-size: 1.1em;
+            opacity: 0.8;
+            margin-bottom: 20px;
+        }
+
+        .price-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-top: 20px;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .price-label {
+            font-size: 0.9em;
+            opacity: 0.7;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .price-value {
+            font-size: 2em;
+            font-weight: 700;
+        }
+
+        .price-change {
+            font-size: 1.2em;
+            font-weight: 600;
+            padding: 5px 15px;
+            border-radius: 20px;
+            background: rgba(0, 200, 83, 0.2);
+            color: #00c853;
+        }
+
+        /* 概要卡片 */
+        .summary-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .summary-title {
+            font-size: 1.5em;
+            font-weight: 600;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .summary-item {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 20px;
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .summary-label {
+            font-size: 0.9em;
+            opacity: 0.7;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .summary-value {
+            font-size: 1.3em;
+            font-weight: 600;
+        }
+
+        /* 时间级别卡片 */
+        .timeframes-section {
+            margin-bottom: 30px;
+        }
+
+        .section-title {
+            font-size: 1.8em;
+            font-weight: 700;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .timeframes-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 20px;
+        }
+
+        .timeframe-card {
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 25px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .timeframe-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #f093fb, #f5576c);
+        }
+
+        .timeframe-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .timeframe-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .timeframe-name {
+            font-size: 1.4em;
+            font-weight: 700;
+        }
+
+        .status-badge {
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .status-up {
+            background: linear-gradient(135deg, #00c853 0%, #00e676 100%);
+            color: #fff;
+        }
+
+        .status-down {
+            background: linear-gradient(135deg, #ff1744 0%, #ff5252 100%);
+            color: #fff;
+        }
+
+        .status-warning {
+            background: linear-gradient(135deg, #ff9800 0%, #ffb74d 100%);
+            color: #fff;
+        }
+
+        .indicator-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .indicator-row:last-child {
+            border-bottom: none;
+        }
+
+        .indicator-label {
+            opacity: 0.7;
+            font-size: 0.95em;
+        }
+
+        .indicator-value {
+            font-weight: 600;
+            font-size: 1.05em;
+        }
+
+        /* 信号卡片 */
+        .signals-card {
+            background: linear-gradient(135deg, rgba(240, 147, 251, 0.15), rgba(245, 87, 108, 0.15));
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .signal-item {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 20px;
+            margin: 15px 0;
+            border-radius: 15px;
+            border-left: 4px solid #f5576c;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .signal-icon {
+            font-size: 1.5em;
+        }
+
+        .signal-content {
+            flex: 1;
+        }
+
+        .signal-title {
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        /* 页脚 */
+        .footer {
+            text-align: center;
+            padding: 30px;
+            opacity: 0.6;
+            font-size: 0.9em;
+        }
+
+        .footer a {
+            color: #f5576c;
+            text-decoration: none;
+        }
+
+        .footer a:hover {
+            text-decoration: underline;
+        }
+
+        /* 响应式 */
+        @media (max-width: 768px) {
+            .header-title {
+                font-size: 1.8em;
+            }
+
+            .price-info {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .timeframes-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* 动画 */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .container > * {
+            animation: fadeIn 0.6s ease-out;
+        }
+
+        .timeframe-card {
+            animation: fadeIn 0.6s ease-out;
+            animation-fill-mode: both;
+        }
+
+        .timeframe-card:nth-child(1) { animation-delay: 0.1s; }
+        .timeframe-card:nth-child(2) { animation-delay: 0.2s; }
+        .timeframe-card:nth-child(3) { animation-delay: 0.3s; }
+        .timeframe-card:nth-child(4) { animation-delay: 0.4s; }
+        .timeframe-card:nth-child(5) { animation-delay: 0.5s; }
+        .timeframe-card:nth-child(6) { animation-delay: 0.6s; }
+        .timeframe-card:nth-child(7) { animation-delay: 0.7s; }
+        .timeframe-card:nth-child(8) { animation-delay: 0.8s; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 顶部标题 -->
+        <div class="header-card">
+            <h1 class="header-title">🚀 BTC 动能分析报告</h1>
+            <p class="header-subtitle">多时间级别技术分析与交易信号</p>
+            <div class="price-info">
+                <span class="price-label">当前价格</span>
+                <span class="price-value">📈 $1.42</span>
+                <span class="price-change">+0.01 (+0.35%)</span>
+                <span style="margin-left: auto; opacity: 0.6; font-size: 0.9em;">
+                    2026-01-28 08:36:37
+                </span>
+            </div>
+        </div>
+
+        <!-- 分析概要 -->
+        <div class="summary-card">
+            <h2 class="summary-title">📊 市场状态概要</h2>
+            <div class="summary-grid">
+                <div class="summary-item">
+                    <div class="summary-label">整体趋势</div>
+                    <div class="summary-value">多空分歧</div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-label">大周期</div>
+                    <div class="summary-value">📈 上涨</div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-label">小周期</div>
+                    <div class="summary-value">📉 下跌</div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-label">操作建议</div>
+                    <div class="summary-value">观望</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 关键信号 -->
+        <div class="signals-card">
+            <h2 class="summary-title">🎯 关键交易信号</h2>
+            <div class="signal-item">
+                <span class="signal-icon">⚠️</span>
+                <div class="signal-content">
+                    <div class="signal-title">12小时顶背离</div>
+                    <div style="opacity: 0.8;">价格创新高但动能不足，注意回调风险</div>
+                </div>
+            </div>
+            <div class="signal-item">
+                <span class="signal-icon">🔄</span>
+                <div class="signal-content">
+                    <div class="signal-title">30分钟反转信号</div>
+                    <div style="opacity: 0.8;">柱状图收敛，可能出现短期反弹</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 多时间级别分析 -->
+        <div class="timeframes-section">
+            <h2 class="section-title">📈 多时间级别分析</h2>
+            <div class="timeframes-grid">
+                <!-- 2日线 -->
+                <div class="timeframe-card">
+                    <div class="timeframe-header">
+                        <div class="timeframe-name">🔵 2日线</div>
+                        <span class="status-badge status-up">上涨</span>
+                    </div>
+                    <div class="indicator-row">
+                        <span class="indicator-label">DEA</span>
+                        <span class="indicator-value" style="color: #00c853;">+1250.3</span>
+                    </div>
+                    <div class="indicator-row">
+                        <span class="indicator-label">DIF</span>
+                        <span class="indicator-value">+1580.7</span>
+                    </div>
+                    <div class="indicator-row">
+                        <span class="indicator-label">Histogram</span>
+                        <span class="indicator-value" style="color: #00c853;">+330.4 ↗</span>
+                    </div>
+                    <div class="indicator-row">
+                        <span class="indicator-label">单位周期</span>
+                        <span class="indicator-value">第 2 周期</span>
+                    </div>
+                    <div class="indicator-row">
+                        <span class="indicator-label">持续时间</span>
+                        <span class="indicator-value">8 根K线</span>
+                    </div>
+                </div>
+
+                <!-- 1日线 -->
+                <div class="timeframe-card">
+                    <div class="timeframe-header">
+                        <div class="timeframe-name">🟢 1日线</div>
+                        <span class="status-badge status-up">上涨</span>
+                    </div>
+                    <div class="indicator-row">
+                        <span class="indicator-label">DEA</span>
+                        <span class="indicator-value" style="color: #00c853;">+850.5</span>
+                    </div>
+                    <div class="indicator-row">
+                        <span class="indicator-label">DIF</span>
+                        <span class="indicator-value">+920.3</span>
+                    </div>
+                    <div class="indicator-row">
+                        <span class="indicator-label">Histogram</span>
+                        <span class="indicator-value" style="color: #ff9800;">+69.8 ↘</span>
+                    </div>
+                    <div class="indicator-row">
+                        <span class="indicator-label">单位周期</span>
+                        <span class="indicator-value">第 1 周期</span>
+                    </div>
+                    <div class="indicator-row">
+                        <span class="indicator-label">持续时间</span>
+                        <span class="indicator-value">12 根K线</span>
+                    </div>
+                </div>
+
+                <!-- 12小时 -->
+                <div class="timeframe-card">
+                    <div class="timeframe-header">
+                        <div class="timeframe-name">🟡 12小时</div>
+                        <span class="status-badge status-warning">动能衰竭</span>
+                    </div>
+                    <div class="indicator-row">
+                        <span class="indicator-label">DEA</span>
+                        <span class="indicator-value" style="color: #00c853;">+420.8</span>
+                    </div>
+                    <div class="indicator-row">
+                        <span class="indicator-label">DIF</span>
+                        <span class="indicator-value">+380.2</span>
+                    </div>
+                    <div class="indicator-row">
+                        <span class="indicator-label">Histogram</span>
+                        <span class="indicator-value" style="color: #ff1744;">-40.6 ↘</span>
+                    </div>
+                    <div class="indicator-row">
+                        <span class="indicator-label">背离</span>
+                        <span class="indicator-value" style="color: #ff9800;">⚠️ 顶背离</span>
+                    </div>
+                    <div class="indicator-row">
+                        <span class="indicator-label">持续时间</span>
+                        <span class="indicator-value">18 根K线</span>
+                    </div>
+                </div>
+
+                <!-- 6小时 -->
+                <div class="timeframe-card">
+                    <div class="timeframe-header">
+                        <div class="timeframe-name">🟠 6小时</div>
+                        <span class="status-badge status-warning">调整期</span>
+                    </div>
+                    <div class="indicator-row">
+                        <span class="indicator-label">DEA</span>
+                        <span class="indicator-value" style="color: #00c853;">+180.3</span>
+                    </div>
+                    <div class="indicator-row">
+                        <span class="indicator-label">DIF</span>
+                        <span class="indicator-value">+120.5</span>
+                    </div>
+                    <div class="indicator-row">
+                        <span class="indicator-label">Histogram</span>
+                        <span class="indicator-value" style="color: #ff1744;">-59.8 ↘</span>
+                    </div>
+                    <div class="indicator-row">
+                        <span class="indicator-label">状态</span>
+                        <span class="indicator-value">分立调控</span>
+                    </div>
+                    <div class="indicator-row">
+                        <span class="indicator-label">持续时间</span>
+                        <span class="indicator-value">6 根K线</span>
+                    </div>
+                </div>
+
+                <!-- 4小时 -->
+                <div class="timeframe-card">
+                    <div class="timeframe-header">
+                        <div class="timeframe-name">🔴 4小时</div>
+                        <span class="status-badge status-warning">过渡期</span>
+                    </div>
+                    <div class="indicator-row">
+                        <span class="indicator-label">DEA</span>
+                        <span class="indicator-value" style="color: #00c853;">+80.2</span>
+                    </div>
+                    <div class="indicator-row">
+                        <span class="indicator-label">DIF</span>
+                        <span class="indicator-value">+50.1</span>
+                    </div>
+                    <div class="indicator-row">
+                        <span class="indicator-label">Histogram</span>
+                        <span class="indicator-value" style="color: #ff1744;">-30.1 ↘</span>
+                    </div>
+                    <div class="indicator-row">
+                        <span class="indicator-label">持续时间</span>
+                        <span class="indicator-value">10 根K线</span>
+                    </div>
+                </div>
+
+                <!-- 2小时 -->
+                <div class="timeframe-card">
+                    <div class="timeframe-header">
+                        <div class="timeframe-name">🔴 2小时</div>
+                        <span class="status-badge status-down">下跌</span>
+                    </div>
+                    <div class="indicator-row">
+                        <span class="indicator-label">DEA</span>
+                        <span class="indicator-value" style="color: #ff1744;">-20.5</span>
+                    </div>
+                    <div class="indicator-row">
+                        <span class="indicator-label">DIF</span>
+                        <span class="indicator-value">-45.3</span>
+                    </div>
+                    <div class="indicator-row">
+                        <span class="indicator-label">Histogram</span>
+                        <span class="indicator-value" style="color: #ff1744;">-24.8 ↘</span>
+                    </div>
+                    <div class="indicator-row">
+                        <span class="indicator-label">持续时间</span>
+                        <span class="indicator-value">4 根K线</span>
+                    </div>
+                </div>
+
+                <!-- 1小时 -->
+                <div class="timeframe-card">
+                    <div class="timeframe-header">
+                        <div class="timeframe-name">🔴 1小时</div>
+                        <span class="status-badge status-down">下跌</span>
+                    </div>
+                    <div class="indicator-row">
+                        <span class="indicator-label">DEA</span>
+                        <span class="indicator-value" style="color: #ff1744;">-35.8</span>
+                    </div>
+                    <div class="indicator-row">
+                        <span class="indicator-label">DIF</span>
+                        <span class="indicator-value">-50.2</span>
+                    </div>
+                    <div class="indicator-row">
+                        <span class="indicator-label">Histogram</span>
+                        <span class="indicator-value" style="color: #ff1744;">-14.4 ↘</span>
+                    </div>
+                    <div class="indicator-row">
+                        <span class="indicator-label">持续时间</span>
+                        <span class="indicator-value">8 根K线</span>
+                    </div>
+                </div>
+
+                <!-- 30分钟 -->
+                <div class="timeframe-card">
+                    <div class="timeframe-header">
+                        <div class="timeframe-name">🔴 30分钟</div>
+                        <span class="status-badge status-down">下跌</span>
+                    </div>
+                    <div class="indicator-row">
+                        <span class="indicator-label">DEA</span>
+                        <span class="indicator-value" style="color: #ff1744;">-45.2</span>
+                    </div>
+                    <div class="indicator-row">
+                        <span class="indicator-label">DIF</span>
+                        <span class="indicator-value">-55.8</span>
+                    </div>
+                    <div class="indicator-row">
+                        <span class="indicator-label">Histogram</span>
+                        <span class="indicator-value" style="color: #ff9800;">-10.6 ↗</span>
+                    </div>
+                    <div class="indicator-row">
+                        <span class="indicator-label">持续时间</span>
+                        <span class="indicator-value">12 根K线</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 页脚 -->
+        <div class="footer">
+            <p>
+                数据来源: OKX API • 理论依据: 自定义动能理论<br>
+                生成时间: 2026-01-28 08:36:37<br><br>
+                ⚠️ 免责声明: 本报告仅供参考，不构成投资建议
+            </p>
+        </div>
+    </div>
+</body>
+</html>
